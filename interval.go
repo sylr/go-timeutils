@@ -150,8 +150,20 @@ func (is Intervals) Equal(input Intervals) bool {
 		return false
 	}
 
-	less := func(i, j Interval) bool {
-		return i.Start.Before(j.Start) || i.Start.Equal(j.Start) && i.Duration() <= j.Duration()
+	less := func(i, j Interval) int {
+		if i.Start.Before(j.Start) {
+			return -1
+		} else if i.Start.After(j.Start) {
+			return 1
+		} else {
+			if i.End.Before(j.End) {
+				return -1
+			} else if i.End.After(j.End) {
+				return 1
+			} else {
+				return 0
+			}
+		}
 	}
 
 	slices.SortFunc(is, less)
