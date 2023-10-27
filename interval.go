@@ -2,10 +2,9 @@ package timeutils
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 // Interval defines a time period that is constained by two time boundaries, a
