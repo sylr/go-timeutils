@@ -1,7 +1,9 @@
 package timeutils
 
 import (
+	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 )
@@ -30,6 +32,17 @@ func TestNewIntervalPanic(t *testing.T) {
 	}()
 
 	_ = NewInterval(start, end)
+}
+
+func TestIntervalString(t *testing.T) {
+	start := time.Now()
+	end := start.Add(time.Hour)
+
+	i := NewInterval(start, end)
+
+	if i.String() != fmt.Sprintf(stringFormat, i.Start.Format(time.RFC3339), i.End.Format(time.RFC3339), i.Duration()) {
+		t.Errorf("Interval.String() output was not as expected")
+	}
 }
 
 func TestIntervalInclude(t *testing.T) {
@@ -255,6 +268,94 @@ func TestIntervalOverlap(t *testing.T) {
 	}
 }
 
+func TestIntervalContiguous(t *testing.T) {
+	start := time.Now()
+	end := start.Add(time.Hour)
+
+	i := NewInterval(start, end)
+
+	tests := []struct {
+		name     string
+		input    Interval
+		expected bool
+	}{
+		{
+			name:     `Input equals interval`,
+			input:    NewInterval(start, end),
+			expected: false,
+		},
+		{
+			name:     `Input before interval`,
+			input:    NewInterval(start.Add(-time.Hour), start.Add(-time.Second)),
+			expected: false,
+		},
+		{
+			name:     `Input after interval`,
+			input:    NewInterval(end.Add(time.Second), end.Add(time.Hour)),
+			expected: false,
+		},
+		{
+			name:     `Input's start negatively differs`,
+			input:    NewInterval(start.Add(-time.Second), end),
+			expected: false,
+		},
+		{
+			name:     `Input's start positively differs`,
+			input:    NewInterval(start.Add(time.Second), end),
+			expected: false,
+		},
+		{
+			name:     `Input's end negatively differs`,
+			input:    NewInterval(start, end.Add(-time.Second)),
+			expected: false,
+		},
+		{
+			name:     `Input's start positively differs`,
+			input:    NewInterval(start, end.Add(time.Second)),
+			expected: false,
+		},
+		{
+			name:     `Input's start before interval's start and end before interval's end`,
+			input:    NewInterval(start.Add(-time.Second), start.Add(time.Second)),
+			expected: false,
+		},
+		{
+			name:     `Input's end before interval's end and end after interval's end`,
+			input:    NewInterval(end.Add(-time.Second), end.Add(time.Second)),
+			expected: false,
+		},
+		{
+			name:     `Input is smaller`,
+			input:    NewInterval(start.Add(time.Second), end.Add(-time.Second)),
+			expected: false,
+		},
+		{
+			name:     `Input is bigger`,
+			input:    NewInterval(start.Add(-time.Second), end.Add(time.Second)),
+			expected: false,
+		},
+		{
+			name:     `Input is contiguous to interval's start`,
+			input:    NewInterval(start.Add(-time.Second), start),
+			expected: true,
+		},
+		{
+			name:     `Input is contiguous to interval's end`,
+			input:    NewInterval(end, end.Add(time.Second)),
+			expected: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := i.Contiguous(test.input)
+			if actual != test.expected {
+				t.Errorf("%s.Contiguous(%s) was expected to be %v, got %v", i, test.input, test.expected, actual)
+			}
+		})
+	}
+}
+
 func TestIntervalSub(t *testing.T) {
 	start := time.Now()
 	end := start.Add(time.Hour)
@@ -302,6 +403,20 @@ func TestIntervalSub(t *testing.T) {
 			expected: Intervals{},
 		},
 		{
+			name:  `Input's start before interval's start and end before interval's end`,
+			input: NewInterval(start.Add(-time.Second), start.Add(time.Second)),
+			expected: Intervals{
+				NewInterval(start.Add(time.Second), end),
+			},
+		},
+		{
+			name:  `Input's start before interval's end and end after interval's end`,
+			input: NewInterval(end.Add(-time.Second), end.Add(time.Second)),
+			expected: Intervals{
+				NewInterval(start, end.Add(-time.Second)),
+			},
+		},
+		{
 			name:  `Input is smaller`,
 			input: NewInterval(start.Add(time.Second), end.Add(-time.Second)),
 			expected: Intervals{
@@ -326,11 +441,39 @@ func TestIntervalSub(t *testing.T) {
 	}
 }
 
+func TestIntervalsString(t *testing.T) {
+	start := time.Now()
+	end := start.Add(time.Hour)
+
+	is := Intervals{
+		NewInterval(start, end),
+		NewInterval(start, end),
+		NewInterval(start, end.Add(-time.Second)),
+		NewInterval(start, end.Add(+time.Second)),
+		NewInterval(start.Add(-time.Second), end),
+		NewInterval(start.Add(+time.Second), end),
+		NewInterval(start.Add(-time.Second), end.Add(-time.Second)),
+		NewInterval(start.Add(+time.Second), end.Add(+time.Second)),
+		NewInterval(start.Add(-time.Second), end.Add(+time.Second)),
+		NewInterval(start.Add(+time.Second), end.Add(-time.Second)),
+	}
+
+	var expected []string
+	for _, i := range is {
+		expected = append(expected, fmt.Sprintf(stringFormat, i.Start.Format(time.RFC3339), i.End.Format(time.RFC3339), i.Duration()))
+	}
+
+	if is.String() != fmt.Sprintf("[%s]", strings.Join(expected, ", ")) {
+		t.Errorf("Intervals.String() output was not as expected")
+	}
+}
+
 func TestIntervalsEqual(t *testing.T) {
 	start := time.Now()
 	end := start.Add(time.Hour)
 
 	is := Intervals{
+		NewInterval(start, end),
 		NewInterval(start, end),
 		NewInterval(start, end.Add(-time.Second)),
 		NewInterval(start, end.Add(+time.Second)),
@@ -351,6 +494,7 @@ func TestIntervalsEqual(t *testing.T) {
 			name: `Input equals interval`,
 			input: Intervals{
 				NewInterval(start, end),
+				NewInterval(start, end),
 				NewInterval(start, end.Add(-time.Second)),
 				NewInterval(start, end.Add(+time.Second)),
 				NewInterval(start.Add(-time.Second), end),
@@ -365,6 +509,7 @@ func TestIntervalsEqual(t *testing.T) {
 		{
 			name: `Randomly shuffled`,
 			input: Intervals{
+				NewInterval(start, end),
 				NewInterval(start.Add(+time.Second), end.Add(+time.Second)),
 				NewInterval(start, end.Add(+time.Second)),
 				NewInterval(start, end),
@@ -378,8 +523,9 @@ func TestIntervalsEqual(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: `Randomly shuffled`,
+			name: `Randomly shuffled #2`,
 			input: Intervals{
+				NewInterval(start, end),
 				NewInterval(start, end),
 				NewInterval(start, end.Add(-time.Minute)),
 				NewInterval(start, end.Add(+time.Minute)),

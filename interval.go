@@ -11,7 +11,7 @@ import (
 // start time that is part of the interval and an end time which is excluded
 // from the interval.
 //
-//	  [----------i----------[
+//	  |----------i----------[
 //	start                  end
 //
 // i.Include(start) == true
@@ -29,8 +29,12 @@ func NewInterval(start, end time.Time) Interval {
 	return Interval{Start: start, End: end}
 }
 
+const (
+	stringFormat = "Interval{start: %s, end: %s, duration: %s}"
+)
+
 func (i Interval) String() string {
-	return fmt.Sprintf("Interval{start: %s, end: %s, duration: %s}", i.Start.Format(time.RFC3339), i.End.Format(time.RFC3339), i.Duration())
+	return fmt.Sprintf(stringFormat, i.Start.Format(time.RFC3339), i.End.Format(time.RFC3339), i.Duration())
 }
 
 func (i Interval) Duration() time.Duration {
