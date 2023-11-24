@@ -7,15 +7,12 @@ import (
 	"time"
 )
 
-// Interval defines a time period that is constained by two time boundaries, a
-// start time that is part of the interval and an end time which is excluded
-// from the interval.
+// Interval defines a period that is constained by two time boundaries, a start
+// time that is part of the interval and an end time which is excluded from the
+// interval.
 //
 //	  |----------i----------[
 //	start                  end
-//
-// i.Include(start) == true
-// i.Include(end) == false
 type Interval struct {
 	Start time.Time
 	End   time.Time
@@ -42,18 +39,19 @@ func (i Interval) Duration() time.Duration {
 }
 
 // Include tests if input time is within the interval. Note that if input is
+//
 // equal to the end of the interval, then false is returned.
 //
-// interval:      |------------i------------[
-// input:              |
+//	interval:      |------------i------------[
+//	input:              |
 func (i Interval) Include(input time.Time) bool {
 	return (i.Start.Before(input) || i.Start.Equal(input)) && i.End.After(input)
 }
 
 // Equal tests that the input interval has the time time boundaries as Interval.
 //
-// interval:      |------------i------------[
-// input:         |----------input----------[
+//	interval:      |------------i------------[
+//	input:         |----------input----------[
 func (i Interval) Equal(input Interval) bool {
 	return i.Start.Equal(input.Start) && i.End.Equal(input.End)
 }
@@ -61,8 +59,8 @@ func (i Interval) Equal(input Interval) bool {
 // Engulf tests that the input interval is within Interval. Returns true also if
 // both intervals are equal.
 //
-// interval:      |------------i------------[
-// input:              |---input---[
+//	interval:      |------------i------------[
+//	input:                |---input---[
 func (i Interval) Engulf(input Interval) bool {
 	return (i.Start.Before(input.Start) || i.Start.Equal(input.Start)) &&
 		(i.End.After(input.End) || i.End.Equal(input.End))
@@ -71,11 +69,11 @@ func (i Interval) Engulf(input Interval) bool {
 // Overlap tests if input overlaps with Interval. Sharing opposite time
 // boundaries is not enough to overlap.
 //
-// interval:      |------------i------------[
-// input:                          |----input---[
-// input:    |----input----[
-// input:             |---input---[
-// input:      |-------------input-------------[
+//	interval:      |------------i------------[
+//	input:                          |----input---[
+//	input:    |----input----[
+//	input:             |---input---[
+//	input:      |-------------input-------------[
 func (i Interval) Overlap(input Interval) bool {
 	return !((input.End.Before(i.Start) || input.End.Equal(i.Start)) ||
 		(input.Start.After(i.End) || input.Start.Equal(i.End)))
@@ -83,20 +81,20 @@ func (i Interval) Overlap(input Interval) bool {
 
 // Contiguous tests if input is contiguous to Interval.
 //
-// interval:           |----------i----------[
-// input:                                    |--input--[
-// input:    |--input--[
+//	interval:           |----------i----------[
+//	input:                                    |--input--[
+//	input:    |--input--[
 func (i Interval) Contiguous(input Interval) bool {
 	return i.End.Equal(input.Start) || i.Start.Equal(input.End)
 }
 
 // Sub substracts input to Interval.
 //
-// interval:      |------------i------------[
-// input:                    |------input------[
-// output:        |----i'----[
-// input:                 |--input--[
-// output:        |--i'---[         |--i"---[
+//	interval:      |------------i------------[
+//	input:                    |------input------[
+//	output:        |----i'----[
+//	input:                 |--input--[
+//	output:        |--i'---[         |--i"---[
 func (i Interval) Sub(input Interval) Intervals {
 	if input.Equal(i) || input.Engulf(i) {
 		return Intervals{}
@@ -137,8 +135,10 @@ func (i Interval) Sub(input Interval) Intervals {
 	}
 }
 
+// Intervals is a slice of Interval.
 type Intervals []Interval
 
+// String returns a string representation of Intervals.
 func (is Intervals) String() string {
 	strs := make([]string, 0, len(is))
 	for _, s := range is {
@@ -148,6 +148,8 @@ func (is Intervals) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(strs, ", "))
 }
 
+// Equal tests that the input Intervals contains the same intervals as
+// Intervals in no particular order.
 func (is Intervals) Equal(input Intervals) bool {
 	if len(is) != len(input) {
 		return false
@@ -181,6 +183,7 @@ func (is Intervals) Equal(input Intervals) bool {
 	return true
 }
 
+// Swap swaps the intervals with indexes i and j.
 func (is Intervals) Swap(i, j int) {
 	is[i], is[j] = is[j], is[i]
 }
