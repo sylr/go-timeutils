@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Interval defines a period that is constained by two time boundaries, a start
+// Interval defines a period that is constrained by two time boundaries, a start
 // time that is part of the interval and an end time which is excluded from the
 // interval.
 //
